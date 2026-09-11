@@ -1,0 +1,44 @@
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+@keyframes growUp {
+    from { 
+        height: 0; 
+    }
+    to { 
+        height: max-content; 
+    }
+}
+
+:root {
+    color-scheme: dark;
+    --l-gray: #353535;
+    --m-gray: #282828;
+    --gray: #202020;
+    --d-gray: #1a1a1a;
+    --orange: #f79802;
+    --blue: #02576e;
+    --l-blue: #5eabc1;
+    --green: #2c6d59;
+    --whitish: #ebebeb;
+    --border-radius: 20px;
+    --border-s-radius: 10px;
+    --icon: brightness(0.1);
+}
+html, body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--d-gray);
+    color: var(--whitish);
+    font-family: 'Rubik', sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select: none;
+    cursor: default;
+}
