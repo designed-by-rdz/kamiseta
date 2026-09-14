@@ -1,9 +1,9 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { appDataDir, downloadDir, join, resolveResource } from '@tauri-apps/api/path';
-import { open } from '@tauri-apps/plugin-dialog';
+import { open, save } from '@tauri-apps/plugin-dialog';
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { readFile } from '@tauri-apps/plugin-fs';
+import { readFile, writeFile } from '@tauri-apps/plugin-fs';
 import jsPDF from 'jspdf';
 import TshirtMockup from '../components/TshirtMockup.vue';
 import PantsMockup from '../components/PantsMockup.vue';
@@ -198,18 +198,25 @@ const loadImage = (src) => {
         img.src = src;
     });
 }
+const dataUrlToBytes = (dataUrl) => {
+    const base64 = dataUrl.split(',')[1];
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+}
 const exportAsPNG = async() => {
     try {
         const canvas = await buildMockupCanvas();
         const dataUrl = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = `${apparelCode.value[activeCreateNew.value]}-mockup.png`;
-        link.click();
     
-        showNotif("Saved to Downloads!");
+        const filePath = await save({ defaultPath: `${apparelCode.value[activeCreateNew.value]}-mockup.png`, filters: [{ name: 'PNG Image', extensions: ['png'] }] })
+        if (!filePath) return
+        await writeFile(filePath, dataUrlToBytes(dataUrl))
+
+        showNotif("Mockup exported to files!");
     } catch (err) {
-        showNotif('PNG export failed:', err);
+        showNotif('PNG export failed: ' + err);
     }
 }
 const exportAsJPG = async() => {
@@ -223,14 +230,14 @@ const exportAsJPG = async() => {
         ctx.globalCompositeOperation = 'source-over';
 
         const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = `${apparelCode.value[activeCreateNew.value]}-mockup.jpg`;
-        link.click();
 
-        showNotif("Saved to Downloads!");
+        const filePath = await save({ defaultPath: `${apparelCode.value[activeCreateNew.value]}-mockup.jpg`, filters: [{ name: 'JPG Image', extensions: ['jpg'] }] })
+        if (!filePath) return
+        await writeFile(filePath, dataUrlToBytes(dataUrl))
+
+        showNotif("Mockup exported to files!");
     } catch (err) {
-        showNotif('JPG export failed:', err);
+        showNotif('JPG export failed: ' + err);
     }
 }
 const exportAsPDF = async() => {
@@ -263,11 +270,15 @@ const exportAsPDF = async() => {
         const y = (pageHeight - renderHeight) / 2;
 
         pdf.addImage(imgData, 'PNG', x, y, renderWidth, renderHeight);
-        pdf.save(`${apparelCode.value[activeCreateNew.value]}-mockup.pdf`);
 
-        showNotif("Saved to Downloads!");
+        const filePath = await save({ defaultPath: `${apparelCode.value[activeCreateNew.value]}-mockup.pdf`, filters: [{ name: 'PDF Document', extensions: ['pdf'] }] })
+        if (!filePath) return
+        const pdfBytes = pdf.output('arraybuffer')
+        await writeFile(filePath, new Uint8Array(pdfBytes))
+
+        showNotif("Mockup exported to files!");
     } catch (err) {
-        showNotif('PDF export failed:', err);
+        showNotif('PDF export failed: ' + err);
     }
 }
 const buildMockupCanvas = async() => {
@@ -321,7 +332,7 @@ const buildMockupCanvas = async() => {
         return canvas;
 
     } catch (err) {
-        showNotif('Export failed:', err);
+        showNotif('Export failed: ' + err);
         return;
     }
 }
